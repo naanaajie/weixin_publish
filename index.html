@@ -265,21 +265,23 @@
   .theme-sspai th { background: #f0f7f4; color: #0d0d0d; border: 1px solid #d0ede6; }
   .theme-sspai td { border: 1px solid #e8f4f0; }
 
-  /* ── 虎嗅·暗金 — 财经商业，权威感 ── */
-  .theme-huxiu { background: #ffffff; color: #333; }
-  .theme-huxiu h1 { font-size: 22px; font-weight: 800; margin: 0 0 0.5em; color: #111; letter-spacing: -0.3px; line-height: 1.35; }
-  .theme-huxiu h2 { font-size: 17px; font-weight: 700; margin: 1.8em 0 0.6em; color: #111; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
-  .theme-huxiu h2::after { content: ''; display: block; width: 40px; height: 3px; background: #c9a227; margin-top: 6px; border-radius: 2px; }
-  .theme-huxiu h3 { font-size: 15px; font-weight: 600; margin: 1.4em 0 0.5em; color: #333; padding-left: 10px; border-left: 3px solid #c9a227; }
-  .theme-huxiu strong { color: #111; font-weight: 700; }
-  .theme-huxiu blockquote { margin: 1.5em 0; padding: 14px 18px; background: #fffcf0; border: 1px solid #f0e0a0; border-radius: 6px; color: #555; }
-  .theme-huxiu a { color: #c9a227; text-decoration: none; font-weight: 500; }
-  .theme-huxiu p code, .theme-huxiu li code { background: #fdf8e8; color: #8a6800; border: 1px solid #ede0b0; }
-  .theme-huxiu pre { background: #1c1c1e; padding: 16px; }
-  .theme-huxiu pre code { color: #ffd60a; }
-  .theme-huxiu hr { height: 1px; background: #e0e0e0; }
-  .theme-huxiu th { background: #fdf8e8; color: #111; border-bottom: 2px solid #c9a227; border: 1px solid #ede0b0; }
-  .theme-huxiu td { border: 1px solid #f0ead0; }
+  /* ── 晚点·深墨蓝 — 深度阅读，克制优雅 ── */
+  .theme-huxiu { background: #181818; color: #d4d4d4; }
+  .theme-huxiu h1 { font-size: 22px; font-weight: 700; margin: 0 0 0.4em; color: #f0f0f0; line-height: 1.4; border-bottom: none; }
+  .theme-huxiu h2 { font-size: 17px; font-weight: 700; margin: 2em 0 0.6em; color: #f0f0f0; display: flex; align-items: center; gap: 8px; }
+  .theme-huxiu h2::before { content: ''; display: inline-block; width: 4px; height: 18px; background: #5b8fff; border-radius: 2px; flex-shrink: 0; }
+  .theme-huxiu h3 { font-size: 15px; font-weight: 600; margin: 1.6em 0 0.5em; color: #a8b8d0; }
+  .theme-huxiu strong { color: #f0f0f0; font-weight: 700; background: linear-gradient(transparent 60%, #1e2a35 60%); }
+  .theme-huxiu blockquote { border: none; margin: 1.5em 0; padding: 16px 20px; background: #0f1a2e; border-radius: 4px; color: #b0c4ff; font-style: italic; line-height: 1.9; position: relative; }
+  .theme-huxiu blockquote::before { content: '"'; position: absolute; top: 8px; left: 14px; font-size: 32px; color: #5b8fff; line-height: 1; font-style: normal; }
+  .theme-huxiu blockquote p { padding-left: 16px; margin: 0; }
+  .theme-huxiu a { color: #5b8fff; text-decoration: none; border-bottom: 1px solid #5b8fff; }
+  .theme-huxiu p code, .theme-huxiu li code { background: #1e2a35; color: #7dd3fc; }
+  .theme-huxiu pre { background: #0d0d0d; padding: 16px; }
+  .theme-huxiu pre code { color: #7dd3fc; }
+  .theme-huxiu hr { height: 1px; background: linear-gradient(to right, transparent, #5b8fff, transparent); }
+  .theme-huxiu th { background: #1a3a52; color: #e0e8ff; border-bottom: 2px solid #5b8fff; }
+  .theme-huxiu td { border-bottom: 1px solid #2a3a4a; color: #d4d4d4; }
 
   /* ── 新周刊·极简白 — 生活方式，轻盈现代 ── */
   .theme-nweekly { background: #ffffff; color: #3a3a3a; }
@@ -698,10 +700,32 @@ function cleanListHtml(html) {
     .replace(/<ol>\s*<\/ol>/g, '');
 }
 
+// ── Step 2.5: Fix extra spacing in lists caused by removed <p> tags ────
+function fixListSpacing(html) {
+  // Replace orphaned closing/opening tags that create extra vertical space
+  let result = html
+    // First pass: Remove completely empty <li> (including whitespace-only)
+    .replace(/<li[^>]*>\s*<\/li>/g, '')
+    // Remove whitespace between list items
+    .replace(/<\/li>\s+<li>/g, '</li><li>')
+    // Clean list end
+    .replace(/<\/ul>\s*<\/li>/g, '</ul></li>')
+    .replace(/<\/ol>\s*<\/li>/g, '</ol></li>')
+    // Trim whitespace inside <li> tags
+    .replace(/<li>\s+/g, '<li>')
+    .replace(/\s+<\/li>/g, '</li>')
+    // Remove orphaned <br> tags
+    .replace(/<br\s*\/?>\s*<\/li>/g, '</li>')
+    // Remove multiple consecutive </li><li> (artifact of empty item removal)
+    .replace(/(<\/li><li>){2,}/g, '</li><li>');
+
+  return result;
+}
+
 function renderPreview() {
   const raw = document.getElementById('md-input').value;
   if (!md) { document.getElementById('wx-preview').innerHTML = '<p style="color:#999;padding:20px">加载渲染器中…</p>'; return; }
-  const html = cleanListHtml(md.render(cleanMarkdown(raw || '*（暂无内容）*')));
+  const html = fixListSpacing(cleanListHtml(md.render(cleanMarkdown(raw || '*（暂无内容）*'))));
   const el = document.getElementById('wx-preview');
   el.innerHTML = html;
   el.className = 'wx-preview theme-' + currentTheme;
@@ -881,8 +905,9 @@ function togglePrompt(id) {
   body.classList.toggle('open');
   arrow.classList.toggle('open');
 }
-// Restore saved settings
+// Restore saved settings & load AI prompts
 window.addEventListener('load', () => {
+  loadPrompts();
   const saved = localStorage.getItem('deepseek_key');
   if (saved) document.getElementById('deepseek-key').value = saved;
   const enabled = localStorage.getItem('ai_enabled') === '1';
@@ -891,48 +916,22 @@ window.addEventListener('load', () => {
   updateAIStatusBar();
 });
 
-// ── DeepSeek prompts per theme ────────────────────────────────────
-const THEME_PROMPTS = {
-  sanlian: `你是三联生活周刊的资深编辑。请将用户提供的文章内容进行排版优化，输出标准 Markdown。要求：
-1. 整体风格：克制优雅，深度阅读感，不花哨
-2. 段落：每段不超过120字，段落间保留空行，语言流畅自然
-3. 标题：用 ## 做一级分节（3-5个），用 ### 做小节，标题言简意赅有文学感
-4. 加粗：仅对最核心的观点或金句加粗（每段最多1处）
-5. 引用：将文中最精彩的金句或数据用 > 引用块突出
-6. 开头：加一段80字以内的精炼导语段落，不加标题
-7. 结尾：加一段"小结"或"写在最后"，升华主题
-8. 严禁：不加无意义标题，不过度使用加粗，不加emoji，不改变核心内容`,
+// ── DeepSeek prompts per theme (loaded from templates/) ────────────────────
+let THEME_PROMPTS = {};
 
-  sspai: `你是少数派的技术编辑。请将用户提供的内容进行排版优化，输出标准 Markdown。要求：
-1. 整体风格：精准克制，适合科技/效率/工具类内容，信息密度高
-2. 结构：用 ## 清晰分节（每节一个知识点），用 ### 做子项
-3. 列表：能列表化的内容优先用 - 无序列表或 1. 有序列表
-4. 加粗：工具名、专有名词、操作步骤关键词加粗
-5. 代码：技术词汇用 \`行内代码\` 格式
-6. 引用块：用于注意事项、Tips、重要说明
-7. 开头：一句话说清楚"这篇文章解决什么问题"
-8. 保持语言简洁直接，每段不超过80字`,
-
-  huxiu: `你是虎嗅网的商业编辑。请将用户提供的内容进行排版优化，输出标准 Markdown。要求：
-1. 整体风格：权威感，财经商业调性，数据驱动
-2. 开头：加一段强冲击力的导语，点明核心矛盾或数据
-3. 标题：用 ## 分3-5节，标题带数字或对比感（如"三个原因"、"两种路径"）
-4. 数据/数字：关键数字和结论加粗
-5. 引用块：用于专家观点、行业数据、重要结论
-6. 段落：每段聚焦一个论点，100字以内，论据充分
-7. 结尾：加"结语"，给出判断或预测
-8. 语言：有力度，避免模糊表述`,
-
-  nweekly: `你是新周刊的内容编辑。请将用户提供的内容进行排版优化，输出标准 Markdown。要求：
-1. 整体风格：轻盈现代，生活方式感，有温度
-2. 段落：短句为主，每段60-80字，留白充分，读来轻快
-3. 标题：用 ## 分节，标题富有生活感和画面感
-4. 加粗：偶尔用于有共鸣感的短句（全文不超过5处）
-5. 引用块：用于有意思的观察、引述、小故事
-6. 开头：用一个有画面感的场景或问题引入
-7. 结尾：用一句有回味的话收尾，不说大道理
-8. 严禁：不堆砌数据，不用生硬专业术语，保持亲切感`
-};
+async function loadPrompts() {
+  const themes = ['sanlian', 'sspai', 'huxiu', 'nweekly'];
+  for (const theme of themes) {
+    try {
+      const res = await fetch(`/templates/${theme}.txt`);
+      if (!res.ok) throw new Error(`Failed to load ${theme}.txt`);
+      THEME_PROMPTS[theme] = await res.text();
+    } catch (e) {
+      console.error(`Error loading prompt for ${theme}:`, e);
+      THEME_PROMPTS[theme] = '排版主题 prompt 加载失败，请检查 /templates 目录';
+    }
+  }
+}
 
 // ── Call DeepSeek API ──────────────────────────────────────────────
 async function preprocessWithAI(rawText) {
@@ -1000,19 +999,19 @@ function buildWxHtml(mdText) {
     },
     huxiu: {
       wrap: 'font-family:-apple-system,PingFang SC,Hiragino Sans GB,sans-serif;font-size:16px;line-height:2;color:#d4d4d4;background:#181818;padding:24px 20px 32px;',
-      h1: 'font-size:22px;font-weight:700;margin:0 0 0.5em;color:#f0f0f0;letter-spacing:0.02em;line-height:1.4;',
-      h2: 'font-size:17px;font-weight:600;margin:2em 0 0.6em;color:#f0f0f0;padding:10px 14px;background:#242424;border-left:3px solid #5b8fff;display:block;',
-      h3: 'font-size:15px;font-weight:600;margin:1.5em 0 0.5em;color:#b0b8d0;',
-      p: 'font-size:16px;line-height:2;color:#d4d4d4;margin:0 0 1.4em;',
-      strong: 'color:#ffffff;font-weight:700;',
-      blockquote: 'border-left:2px solid #5b8fff;margin:1.5em 0;padding:10px 16px;background:#1e2030;color:#a0a8c0;border-radius:0 6px 6px 0;',
-      a: 'color:#5b8fff;text-decoration:none;',
-      code: 'background:#242424;color:#7dd3fc;border:1px solid #333;padding:2px 6px;border-radius:4px;font-size:13px;font-family:monospace;',
+      h1: 'font-size:22px;font-weight:700;margin:0 0 0.4em;color:#f0f0f0;line-height:1.4;background:#181818;',
+      h2: 'font-size:17px;font-weight:700;margin:2em 0 0.6em;color:#f0f0f0;padding-left:12px;border-left:4px solid #5b8fff;background:#181818;',
+      h3: 'font-size:15px;font-weight:600;margin:1.6em 0 0.5em;color:#a8b8d0;background:#181818;',
+      p: 'font-size:16px;line-height:2;color:#d4d4d4;margin:0 0 1.4em;background:#181818;',
+      strong: 'color:#f0f0f0;font-weight:700;background:linear-gradient(transparent 60%,#1e2a35 60%);',
+      blockquote: 'border:none;margin:1.5em 0;padding:16px 20px;background:#0f1a2e;border-radius:4px;color:#b0c4ff;font-style:italic;line-height:1.9;position:relative;',
+      a: 'color:#5b8fff;text-decoration:none;border-bottom:1px solid #5b8fff;',
+      code: 'background:#1e2a35;color:#7dd3fc;padding:2px 6px;border-radius:4px;font-size:13px;font-family:monospace;',
       pre: 'background:#0d0d0d;padding:16px;border-radius:8px;overflow-x:auto;margin:1.2em 0;border:1px solid #333;',
-      hr: 'border:none;height:1px;background:#333;margin:2em 0;',
-      ul: 'padding-left:1.6em;margin:0.8em 0 1.2em;', li: 'margin-bottom:0.5em;line-height:1.9;color:#d4d4d4;',
-      th: 'background:#242424;color:#f0f0f0;padding:8px 12px;border:1px solid #333;',
-      td: 'padding:8px 12px;border:1px solid #2a2a2a;color:#c0c0c0;'
+      hr: 'border:none;height:1px;background:linear-gradient(to right,transparent,#5b8fff,transparent);margin:2em 0;',
+      ul: 'padding-left:1.6em;margin:0.8em 0 1.2em;background:#181818;', li: 'margin-bottom:0.5em;line-height:1.9;color:#d4d4d4;background:#181818;',
+      th: 'background:#1a3a52;color:#e0e8ff;padding:8px 12px;border-bottom:2px solid #5b8fff;font-weight:600;',
+      td: 'padding:8px 12px;border-bottom:1px solid #2a3a4a;color:#d4d4d4;background:#181818;'
     },
     nweekly: {
       wrap: 'font-family:-apple-system,PingFang SC,Hiragino Sans GB,sans-serif;font-size:16px;line-height:2;color:#3a3a3a;background:#ffffff;padding:24px 20px 32px;',
@@ -1032,7 +1031,7 @@ function buildWxHtml(mdText) {
     }
   };
   const s = T[currentTheme] || T.sanlian;
-  const cleaned = cleanListHtml(raw);
+  const cleaned = fixListSpacing(cleanListHtml(raw));
   return `<div style="${s.wrap}">` + cleaned
     .replace(/<h1>/g, `<h1 style="${s.h1}">`)
     .replace(/<h2>/g, `<h2 style="${s.h2}">`)
