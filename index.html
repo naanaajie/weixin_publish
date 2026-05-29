@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>公众号发布助手</title>
+<!-- markdown-it for parsing -->
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js"></script>
+<!-- highlight.js for code blocks -->
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/bash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/xml.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f5f5f0;
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border-med: rgba(0,0,0,0.15);
+    --text: #1a1a1a;
+    --text-2: #666;
+    --text-3: #999;
+    --accent: #1a1a1a;
+    --accent-light: #f0f0ec;
+    --green: #2d8a4e;
+    --green-bg: #eaf4ee;
+    --red: #c0392b;
+    --red-bg: #fdf0ef;
+    --blue: #1a5faa;
+    --blue-bg: #eef4fb;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  html, body { height: 100%; background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif; }
+  #app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: var(--bg); }
+
+  /* ── Tabs ── */
+  .header { background: var(--card); border-bottom: 0.5px solid var(--border); display: flex; position: sticky; top: 0; z-index: 50; }
+  .tab-btn { flex: 1; padding: 13px 0; font-size: 13px; font-weight: 500; color: var(--text-3); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+  .page { display: none; flex: 1; overflow-y: auto; padding-bottom: 80px; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .section { background: var(--card); margin: 12px 16px; border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
+  .section-header { padding: 11px 16px 9px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 0.5px solid var(--border); }
+
+  /* ── Account selector ── */
+  .account-pick { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; background: var(--card); transition: background 0.1s; }
+  .account-pick:active { background: var(--accent-light); }
+  .avatar { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; flex-shrink: 0; }
+  .account-pick .info { flex: 1; min-width: 0; }
+  .account-pick .info .name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .account-pick .info .id { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: 'SF Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .no-account { padding: 16px; color: var(--text-3); font-size: 13px; text-align: center; }
+
+  /* ── Cover ── */
+  .cover-area { padding: 14px 16px; }
+  .cover-drop { border: 1.5px dashed var(--border-med); border-radius: var(--radius-sm); height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: var(--text-3); transition: border-color 0.15s, background 0.15s; }
+  .cover-drop:hover { border-color: var(--text-2); background: var(--accent-light); }
+  .cover-drop svg { width: 24px; height: 24px; opacity: 0.5; }
+  .cover-drop span { font-size: 13px; }
+  .cover-preview { border-radius: var(--radius-sm); height: 90px; background: #ddd; display: none; position: relative; overflow: hidden; }
+  .cover-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cover-preview .rm-btn { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.55); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; }
+  .cover-preview .rm-btn svg { width: 12px; height: 12px; }
+
+  /* ── Fields ── */
+  .field { padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+  .field:last-child { border-bottom: none; }
+  .field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; }
+  .field input { width: 100%; border: none; outline: none; background: transparent; font-size: 15px; color: var(--text); font-family: inherit; }
+  .field input::placeholder { color: var(--text-3); }
+
+  /* ── Markdown editor area ── */
+  .editor-wrap { display: flex; flex-direction: column; }
+  .editor-tabs { display: flex; border-bottom: 0.5px solid var(--border); background: var(--accent-light); }
+  .editor-tab { flex: 1; padding: 9px 0; font-size: 12px; font-weight: 500; color: var(--text-3); background: none; border: none; cursor: pointer; transition: all 0.15s; }
+  .editor-tab.active { color: var(--text); background: var(--card); }
+  #md-input {
+    width: 100%; min-height: 220px; border: none; outline: none;
+    background: transparent; font-size: 14px; color: var(--text);
+    font-family: 'SF Mono', 'Menlo', monospace; resize: none;
+    padding: 14px 16px; line-height: 1.7;
+  }
+  #md-input::placeholder { color: var(--text-3); font-family: -apple-system, 'PingFang SC', sans-serif; }
+  #preview-wrap { display: none; padding: 0; }
+  .char-row { padding: 6px 16px 10px; display: flex; justify-content: space-between; }
+  .char-count { font-size: 12px; color: var(--text-3); }
+
+  /* ── Theme selector ── */
+  .theme-row { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; }
+  .theme-row::-webkit-scrollbar { display: none; }
+  .theme-chip { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1.5px solid var(--border-med); background: var(--card); color: var(--text-2); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .theme-chip.selected { border-color: var(--text); background: var(--accent); color: #fff; }
+
+  /* ── Publish mode ── */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 16px; }
+  .mode-card { border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 10px; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .mode-card.selected { border-color: var(--text); background: var(--accent-light); }
+  .mode-card .mode-icon { font-size: 20px; margin-bottom: 5px; }
+  .mode-card .mode-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .mode-card .mode-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+
+  /* ── Bottom bar ── */
+  .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--card); border-top: 0.5px solid var(--border); padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); z-index: 50; }
+  .btn-pub { width: 100%; padding: 14px; border: none; border-radius: var(--radius); background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s, transform 0.1s; }
+  .btn-pub:active { opacity: 0.85; transform: scale(0.98); }
+  .btn-pub:disabled { opacity: 0.4; }
+
+  /* ── Config page ── */
+  .cfg-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px; }
+  .cfg-bar h2 { font-size: 15px; font-weight: 600; }
+  .btn-add { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border-med); background: none; font-size: 13px; color: var(--text-2); cursor: pointer; font-family: inherit; }
+  .acct-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+  .acct-item:last-child { border-bottom: none; }
+  .acct-item .info { flex: 1; min-width: 0; }
+  .acct-item .info .name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .acct-item .info .appid { font-size: 12px; color: var(--text-3); font-family: 'SF Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+  .badge-default { background: #e8f5e9; color: #2d6a4f; }
+  .badge-normal { background: var(--accent-light); color: var(--text-3); }
+  .acct-actions { display: flex; gap: 4px; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: none; cursor: pointer; color: var(--text-3); display: flex; align-items: center; justify-content: center; }
+  .icon-btn:hover { background: var(--accent-light); color: var(--text); }
+  .icon-btn svg { width: 16px; height: 16px; }
+  .tip-box { margin: 0 16px 16px; padding: 12px 14px; background: var(--blue-bg); border-radius: var(--radius-sm); font-size: 12px; color: var(--blue); line-height: 1.7; }
+  .ip-box { margin: 0 16px 12px; border-radius: var(--radius); border: 1px solid #f5c84a; background: #fffbeb; overflow: hidden; }
+  .ip-box-header { padding: 11px 14px 0; font-size: 13px; font-weight: 600; color: #92600a; }
+  .ip-box-desc { padding: 5px 14px 12px; font-size: 12px; color: #a07020; line-height: 1.7; }
+  .ip-row { display: flex; align-items: center; gap: 8px; margin: 8px 14px 12px; background: #fff8e0; border: 1px solid #f0d060; border-radius: var(--radius-sm); padding: 9px 12px; }
+  .ip-val { flex: 1; font-size: 15px; font-weight: 600; color: #7a4800; font-family: 'SF Mono', monospace; letter-spacing: 0.03em; }
+  .ip-loading { flex: 1; font-size: 13px; color: #aaa; }
+  .btn-copy-ip { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1px solid #e0b030; background: #fff; font-size: 12px; font-weight: 500; color: #92600a; cursor: pointer; font-family: inherit; transition: background 0.15s; white-space: nowrap; }
+  .btn-copy-ip:active { background: #fef3c0; }
+  .ip-steps { padding: 0 14px 14px; font-size: 12px; color: #a07020; line-height: 1.9; }
+  .ip-steps a { color: #c07820; font-weight: 500; }
+  .ip-link { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 20px; background: #f5c84a; color: #7a4800; font-size: 12px; font-weight: 600; text-decoration: none; margin: 2px 0 4px; }
+
+
+  /* ── Sheets ── */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; justify-content: center; }
+  .overlay.open { display: flex; }
+  .sheet { background: var(--card); border-radius: 20px 20px 0 0; padding: 20px 20px max(28px, env(safe-area-inset-bottom)); width: 100%; max-width: 480px; animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-title { font-size: 16px; font-weight: 600; margin-bottom: 18px; }
+  .sheet-field { margin-bottom: 14px; }
+  .sheet-field label { display: block; font-size: 12px; color: var(--text-3); margin-bottom: 6px; font-weight: 500; }
+  .sheet-field input { width: 100%; padding: 10px 13px; border: 1px solid var(--border-med); border-radius: var(--radius-sm); font-size: 14px; color: var(--text); outline: none; font-family: inherit; }
+  .sheet-field input[type=password] { font-family: 'SF Mono', monospace; }
+  .sheet-hint { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+  .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+  .btn-cancel { padding: 13px; border: 1px solid var(--border-med); border-radius: var(--radius); background: none; font-size: 14px; color: var(--text-2); cursor: pointer; font-family: inherit; }
+  .btn-save { padding: 13px; border: none; border-radius: var(--radius); background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-save:disabled { opacity: 0.5; }
+  .picker-item { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .picker-item:last-child { border-bottom: none; }
+  .picker-item .pinfo { flex: 1; min-width: 0; }
+  .picker-item .pname { font-size: 14px; font-weight: 500; }
+  .picker-item .paid { font-size: 12px; color: var(--text-3); font-family: 'SF Mono', monospace; }
+  .check-icon { color: var(--green); opacity: 0; }
+  .check-icon.visible { opacity: 1; }
+
+  /* ── Progress ── */
+  .progress-wrap { padding: 16px; display: none; }
+  .progress-wrap.visible { display: block; }
+  .step-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .step-item:last-child { border-bottom: none; }
+  .step-dot { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-top: 1px; }
+  .step-dot.wait { background: var(--accent-light); color: var(--text-3); border: 1px solid var(--border-med); }
+  .step-dot.running { background: var(--blue-bg); color: var(--blue); border: 1px solid #b3cde8; }
+  .step-dot.done { background: var(--green-bg); color: var(--green); border: 1px solid #b3d9c0; }
+  .step-dot.err { background: var(--red-bg); color: var(--red); border: 1px solid #f0c0bc; }
+  .step-info .step-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .step-info .step-msg { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .step-info .step-msg.err { color: var(--red); }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(10px); background: rgba(20,20,20,0.88); color: #fff; padding: 9px 20px; border-radius: 22px; font-size: 13px; z-index: 200; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s, transform 0.2s; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: rgba(45,138,78,0.92); }
+  .toast.error { background: rgba(192,57,43,0.92); }
+
+  /* ── AI prompt rows ── */
+  .ai-prompt-row { padding: 12px 16px; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+  .ai-prompt-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text); }
+  .ai-prompt-tag { font-size: 11px; background: var(--accent-light); color: var(--text-3); padding: 2px 8px; border-radius: 20px; font-weight: 400; }
+  .ai-prompt-arrow { margin-left: auto; color: var(--text-3); transition: transform 0.2s; font-size: 16px; }
+  .ai-prompt-arrow.open { transform: rotate(90deg); }
+  .ai-prompt-body { display: none; font-size: 12px; color: var(--text-3); line-height: 1.7; margin-top: 8px; padding-left: 2px; }
+  .ai-prompt-body.open { display: block; }
+
+  /* ── Toggle switch ── */
+  .toggle-wrap { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+  .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #ddd; border-radius: 13px; cursor: pointer; transition: background 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle-wrap input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-wrap input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+  /* ── Spinner ── */
+  .spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ══════════════════════════════════════════
+     WECHAT ARTICLE PREVIEW THEMES
+  ══════════════════════════════════════════ */
+
+  /* Base */
+  .wx-preview {
+    padding: 24px 20px 32px;
+    font-size: 16px;
+    line-height: 2;
+    color: #3a3a3a;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    background: #fff;
+    font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  }
+  .wx-preview p { margin: 0 0 1.4em; }
+  .wx-preview img { max-width: 100%; display: block; margin: 16px auto; border-radius: 6px; }
+  .wx-preview ul, .wx-preview ol { padding-left: 1.6em; margin: 0.8em 0 1.2em; }
+  .wx-preview li { margin-bottom: 0.5em; line-height: 1.9; }
+  .wx-preview pre { margin: 1.2em 0; border-radius: 8px; overflow-x: auto; }
+  .wx-preview code { font-family: 'SF Mono', Menlo, monospace; font-size: 13px; }
+  .wx-preview p code, .wx-preview li code { padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .wx-preview table { width: 100%; border-collapse: collapse; margin: 1.2em 0; font-size: 14px; }
+  .wx-preview th, .wx-preview td { padding: 8px 12px; }
+  .wx-preview hr { border: none; margin: 2em 0; }
+
+  /* ── 三联·深墨 — 深度阅读，克制优雅 ── */
+  .theme-sanlian { background: #faf9f7; color: #2c2c2c; }
+  .theme-sanlian h1 { font-size: 22px; font-weight: 700; margin: 0 0 0.4em; color: #1a1a1a; letter-spacing: 0.02em; line-height: 1.4; border-bottom: none; }
+  .theme-sanlian h2 { font-size: 17px; font-weight: 700; margin: 2em 0 0.6em; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+  .theme-sanlian h2::before { content: ''; display: inline-block; width: 4px; height: 18px; background: #c8a96e; border-radius: 2px; flex-shrink: 0; }
+  .theme-sanlian h3 { font-size: 15px; font-weight: 600; margin: 1.6em 0 0.5em; color: #3a3a3a; }
+  .theme-sanlian strong { color: #1a1a1a; font-weight: 700; background: linear-gradient(transparent 60%, #f5e6c8 60%); }
+  .theme-sanlian blockquote { border: none; margin: 1.5em 0; padding: 16px 20px; background: #f5f0e8; border-radius: 4px; color: #5a5a5a; font-style: italic; line-height: 1.9; position: relative; }
+  .theme-sanlian blockquote::before { content: '"'; position: absolute; top: 8px; left: 14px; font-size: 32px; color: #c8a96e; line-height: 1; font-style: normal; }
+  .theme-sanlian blockquote p { padding-left: 16px; margin: 0; }
+  .theme-sanlian a { color: #8b6914; text-decoration: none; border-bottom: 1px solid #c8a96e; }
+  .theme-sanlian p code, .theme-sanlian li code { background: #f0ede8; color: #5a3a1a; }
+  .theme-sanlian pre { background: #2c2c2c; padding: 16px; }
+  .theme-sanlian pre code { color: #e8e8e8; }
+  .theme-sanlian hr { height: 1px; background: linear-gradient(to right, transparent, #c8a96e, transparent); }
+  .theme-sanlian th { background: #f0ede8; color: #2c2c2c; border-bottom: 2px solid #c8a96e; }
+  .theme-sanlian td { border-bottom: 1px solid #ede9e0; }
+
+  /* ── 少数派·墨绿 — 科技干货，精准克制 ── */
+  .theme-sspai { background: #ffffff; color: #333; }
+  .theme-sspai h1 { font-size: 22px; font-weight: 700; margin: 0 0 0.5em; color: #0d0d0d; letter-spacing: -0.3px; }
+  .theme-sspai h2 { font-size: 17px; font-weight: 700; margin: 2em 0 0.7em; color: #0d0d0d; padding: 9px 14px; background: #f0f7f4; border-left: 4px solid #00a676; border-radius: 0 6px 6px 0; display: block; }
+  .theme-sspai h3 { font-size: 15px; font-weight: 600; margin: 1.5em 0 0.5em; color: #00a676; }
+  .theme-sspai strong { color: #0d0d0d; font-weight: 700; }
+  .theme-sspai blockquote { border-left: 3px solid #00a676; margin: 1.5em 0; padding: 10px 16px; background: #f6faf8; color: #555; border-radius: 0 6px 6px 0; }
+  .theme-sspai a { color: #00a676; text-decoration: none; }
+  .theme-sspai p code, .theme-sspai li code { background: #f0f7f4; color: #00835e; border: 1px solid #d0ede6; }
+  .theme-sspai pre { background: #1e2a22; padding: 16px; border-radius: 8px; }
+  .theme-sspai pre code { color: #a8e6cf; }
+  .theme-sspai hr { height: 2px; background: linear-gradient(to right, #00a676, #00d4a0, transparent); border-radius: 1px; }
+  .theme-sspai th { background: #f0f7f4; color: #0d0d0d; border: 1px solid #d0ede6; }
+  .theme-sspai td { border: 1px solid #e8f4f0; }
+
+  /* ── 虎嗅·暗金 — 财经商业，权威感 ── */
+  .theme-huxiu { background: #ffffff; color: #333; }
+  .theme-huxiu h1 { font-size: 22px; font-weight: 800; margin: 0 0 0.5em; color: #111; letter-spacing: -0.3px; line-height: 1.35; }
+  .theme-huxiu h2 { font-size: 17px; font-weight: 700; margin: 1.8em 0 0.6em; color: #111; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+  .theme-huxiu h2::after { content: ''; display: block; width: 40px; height: 3px; background: #c9a227; margin-top: 6px; border-radius: 2px; }
+  .theme-huxiu h3 { font-size: 15px; font-weight: 600; margin: 1.4em 0 0.5em; color: #333; padding-left: 10px; border-left: 3px solid #c9a227; }
+  .theme-huxiu strong { color: #111; font-weight: 700; }
+  .theme-huxiu blockquote { margin: 1.5em 0; padding: 14px 18px; background: #fffcf0; border: 1px solid #f0e0a0; border-radius: 6px; color: #555; }
+  .theme-huxiu a { color: #c9a227; text-decoration: none; font-weight: 500; }
+  .theme-huxiu p code, .theme-huxiu li code { background: #fdf8e8; color: #8a6800; border: 1px solid #ede0b0; }
+  .theme-huxiu pre { background: #1c1c1e; padding: 16px; }
+  .theme-huxiu pre code { color: #ffd60a; }
+  .theme-huxiu hr { height: 1px; background: #e0e0e0; }
+  .theme-huxiu th { background: #fdf8e8; color: #111; border-bottom: 2px solid #c9a227; border: 1px solid #ede0b0; }
+  .theme-huxiu td { border: 1px solid #f0ead0; }
+
+  /* ── 新周刊·极简白 — 生活方式，轻盈现代 ── */
+  .theme-nweekly { background: #ffffff; color: #3a3a3a; }
+  .theme-nweekly h1 { font-size: 23px; font-weight: 700; margin: 0 0 0.5em; color: #111; letter-spacing: 0.05em; line-height: 1.4; }
+  .theme-nweekly h2 { font-size: 16px; font-weight: 600; margin: 2em 0 0.8em; color: #111; text-align: center; padding: 8px 0; letter-spacing: 0.08em; }
+  .theme-nweekly h3 { font-size: 15px; font-weight: 600; margin: 1.5em 0 0.5em; color: #111; padding-left: 10px; border-left: 3px solid #999; letter-spacing: 0.03em; }
+  .theme-nweekly strong { color: #111; font-weight: 700; letter-spacing: 0.02em; }
+  .theme-nweekly blockquote { border: none; margin: 1.8em 2em; padding: 0; color: #666; font-style: italic; font-size: 15px; line-height: 2; text-align: center; }
+  .theme-nweekly blockquote::before { content: '—'; display: block; color: #bbb; margin-bottom: 6px; }
+  .theme-nweekly a { color: #333; text-decoration: underline; text-underline-offset: 3px; }
+  .theme-nweekly p code, .theme-nweekly li code { background: #f5f5f5; color: #333; border-radius: 3px; }
+  .theme-nweekly pre { background: #f5f5f5; padding: 16px; border-radius: 8px; }
+  .theme-nweekly hr { height: 1px; background: #111; width: 60px; margin: 2em auto; }
+  .theme-nweekly th { background: #111; color: #fff; padding: 8px 12px; }
+  .theme-nweekly td { border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <button class="tab-btn active" onclick="switchTab('publish')">排版发布</button>
+    <button class="tab-btn" onclick="switchTab('ai')">AI 配置</button>
+    <button class="tab-btn" onclick="switchTab('config')">公众号</button>
+  </div>
+
+  <!-- ══════════ Publish Page ══════════ -->
+  <div class="page active" id="page-publish">
+
+    <!-- Account -->
+    <div class="section" style="margin-top:16px;">
+      <div class="section-header">目标公众号</div>
+      <div id="acct-selector"></div>
+    </div>
+
+    <!-- Cover -->
+    <div class="section">
+      <div class="section-header">封面图片</div>
+      <div class="cover-area">
+        <div class="cover-drop" id="cover-drop" onclick="document.getElementById('file-input').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4-4 4 4 4-6 4 6M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>点击选择封面图片</span>
+        </div>
+        <div class="cover-preview" id="cover-preview">
+          <img id="cover-img" src="" alt="封面">
+          <button class="rm-btn" onclick="removeCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg></button>
+        </div>
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(this)">
+      </div>
+    </div>
+
+    <!-- Meta fields -->
+    <div class="section">
+      <div class="field">
+        <label>文章标题 *</label>
+        <input type="text" id="art-title" placeholder="请输入文章标题" maxlength="64">
+      </div>
+      <div class="field">
+        <label>作者</label>
+        <input type="text" id="art-author" placeholder="选填">
+      </div>
+      <div class="field">
+        <label>摘要</label>
+        <input type="text" id="art-digest" placeholder="选填，默认取正文前 54 字">
+      </div>
+    </div>
+
+    <!-- Markdown editor -->
+    <div class="section">
+      <div class="section-header">正文内容</div>
+      <div class="editor-wrap">
+        <div class="editor-tabs">
+          <button class="editor-tab active" id="tab-edit" onclick="switchEditorTab('edit')">✏️ 编辑</button>
+          <button class="editor-tab" id="tab-preview" onclick="switchEditorTab('preview')">👁 预览</button>
+        </div>
+        <textarea id="md-input" placeholder="支持 Markdown 格式&#10;&#10;# 标题&#10;## 二级标题&#10;**加粗** *斜体* `代码`&#10;- 列表项&#10;> 引用内容" oninput="onMdInput()"></textarea>
+        <div id="preview-wrap">
+          <div class="wx-preview theme-sanlian" id="wx-preview"></div>
+        </div>
+        <div class="char-row">
+          <span class="char-count" id="char-count">0 字</span>
+          <span class="char-count" style="color:#aaa">Markdown</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI status bar -->
+    <div id="ai-status-bar" style="display:none;margin:0 16px 0;padding:9px 14px;background:#f0f7f4;border-radius:8px;border:1px solid #c0e8d8;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;color:#00835e;">✦ AI 排版已开启</span>
+      <span style="font-size:12px;color:#00a676;flex:1;" id="ai-status-model"></span>
+      <button onclick="switchTab('ai')" style="font-size:11px;color:#00835e;background:none;border:none;cursor:pointer;text-decoration:underline;">配置</button>
+    </div>
+
+    <!-- Theme selector -->
+    <div class="section">
+      <div class="section-header">排版主题</div>
+      <div class="theme-row">
+        <div class="theme-chip selected" onclick="setTheme('sanlian', this)">🏮 三联·深墨</div>
+        <div class="theme-chip" onclick="setTheme('sspai', this)">🌿 少数派·墨绿</div>
+        <div class="theme-chip" onclick="setTheme('huxiu', this)">🌙 晚点·暗夜</div>
+        <div class="theme-chip" onclick="setTheme('nweekly', this)">✦ 新周刊·极简</div>
+      </div>
+    </div>
+
+    <!-- Publish mode -->
+    <div class="section">
+      <div class="section-header">发布方式</div>
+      <div class="mode-grid">
+        <div class="mode-card selected" id="mode-draft" onclick="selectMode('draft')">
+          <div class="mode-icon">📝</div>
+          <div class="mode-name">保存草稿</div>
+          <div class="mode-desc">存入草稿箱，人工审核后发布</div>
+        </div>
+        <div class="mode-card" id="mode-mass" onclick="selectMode('mass')">
+          <div class="mode-icon">📣</div>
+          <div class="mode-name">直接发布</div>
+          <div class="mode-desc">无需审核，直接发布</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="section">
+      <div class="progress-wrap" id="progress-wrap">
+        <div id="step-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════ AI Config Page ══════════ -->
+  <div class="page" id="page-ai">
+    <div style="padding:20px 16px 12px;">
+      <div style="font-size:18px;font-weight:600;color:var(--text);margin-bottom:4px;">AI 智能排版</div>
+      <div style="font-size:13px;color:var(--text-3);line-height:1.6;">接入 DeepSeek，发布前自动优化文章结构、标题层级和关键词，每套主题匹配专属排版 prompt。</div>
+    </div>
+
+    <!-- Toggle -->
+    <div class="section">
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:500;color:var(--text);">启用 AI 排版预处理</div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:3px;line-height:1.6;">发布时自动调用 DeepSeek 优化后再渲染</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="ai-toggle" onchange="onAIToggle(this)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="section">
+      <div class="section-header">API Key</div>
+      <div class="field" style="border:none;">
+        <label>DeepSeek API Key</label>
+        <input type="password" id="deepseek-key" placeholder="sk-xxxxxxxxxxxxxxxx"
+          style="font-family:'SF Mono',monospace;"
+          oninput="saveAIKey(this.value)">
+        <div style="margin-top:8px;font-size:12px;color:var(--text-3);">
+          仅保存在本地 localStorage，不上传任何服务器。<br>
+          在 <a href="https://platform.deepseek.com" target="_blank" style="color:var(--blue);">platform.deepseek.com</a> 获取，按量计费，极其便宜。
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-theme prompts info -->
+    <div class="section">
+      <div class="section-header">各主题排版 Prompt</div>
+      <div style="padding:4px 0;">
+        <div class="ai-prompt-row" onclick="togglePrompt('sanlian')">
+          <div class="ai-prompt-header">
+            <span>🏮 三联·深墨</span>
+            <span class="ai-prompt-tag">深度阅读</span>
+            <span class="ai-prompt-arrow" id="arrow-sanlian">›</span>
+          </div>
+          <div class="ai-prompt-body" id="body-sanlian">克制优雅，大段落，金句引用，文学感标题，适合深度文化类内容。</div>
+        </div>
+        <div class="ai-prompt-row" onclick="togglePrompt('sspai')">
+          <div class="ai-prompt-header">
+            <span>🌿 少数派·墨绿</span>
+            <span class="ai-prompt-tag">科技干货</span>
+            <span class="ai-prompt-arrow" id="arrow-sspai">›</span>
+          </div>
+          <div class="ai-prompt-body" id="body-sspai">精准克制，列表化，工具名加粗，代码格式，适合效率/工具类内容。</div>
+        </div>
+        <div class="ai-prompt-row" onclick="togglePrompt('huxiu')">
+          <div class="ai-prompt-header">
+            <span>🌙 晚点·暗夜</span>
+            <span class="ai-prompt-tag">深色沉浸</span>
+            <span class="ai-prompt-arrow" id="arrow-huxiu">›</span>
+          </div>
+          <div class="ai-prompt-body" id="body-huxiu">深色背景，简洁段落，蓝色高亮，适合技术/夜间阅读类内容。</div>
+        </div>
+        <div class="ai-prompt-row" onclick="togglePrompt('nweekly')" style="border:none;">
+          <div class="ai-prompt-header">
+            <span>✦ 新周刊·极简</span>
+            <span class="ai-prompt-tag">生活方式</span>
+            <span class="ai-prompt-arrow" id="arrow-nweekly">›</span>
+          </div>
+          <div class="ai-prompt-body" id="body-nweekly">轻盈短句，画面感开头，生活感标题，有温度的收尾，适合生活方式内容。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box" style="margin-top:0;">
+      💡 AI 排版不会改变文章核心内容，只优化结构和格式。处理后内容会回填编辑框，可以预览确认再发布。
+    </div>
+  </div>
+
+  <!-- ══════════ Config Page ══════════ -->
+  <div class="page" id="page-config">
+    <div class="cfg-bar">
+      <h2>已配置公众号</h2>
+      <button class="btn-add" onclick="openAddSheet()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        新增
+      </button>
+    </div>
+    <div class="section">
+      <div id="cfg-list"></div>
+    </div>
+    <!-- IP Whitelist helper -->
+    <div class="ip-box">
+      <div class="ip-box-header">⚠️ 微信 IP 白名单配置</div>
+      <div class="ip-box-desc">微信要求调用接口的服务器 IP 必须加入白名单，否则会报 invalid ip 错误。</div>
+      <div class="ip-row">
+        <span class="ip-val" id="ip-display"><span class="ip-loading">获取中…</span></span>
+        <button class="btn-copy-ip" onclick="copyIp()">复制 IP</button>
+      </div>
+      <div class="ip-steps">
+        1. 复制上方 IP 地址<br>
+        2. 打开微信公众平台，进入：<br>
+        &nbsp;&nbsp;&nbsp;设置与开发 → 基本配置 → IP 白名单<br>
+        3. 点「修改」，粘贴 IP，保存<br><br>
+        <a class="ip-link" href="https://mp.weixin.qq.com" target="_blank">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke-linecap="round"/></svg>
+          打开微信公众平台
+        </a>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      🔒 AppSecret 仅保存在本地浏览器（localStorage），不会上传到任何服务器。发布时由你的后端中转换取 access_token。
+    </div>
+  </div>
+
+  <div class="bottom-bar" id="bottom-bar-publish">
+    <button class="btn-pub" id="btn-pub" onclick="doPublish()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      排版并发布
+    </button>
+  </div>
+</div>
+
+<!-- Add/Edit sheet -->
+<div class="overlay" id="sheet-overlay" onclick="closeSheetOutside(event)">
+  <div class="sheet">
+    <div class="sheet-title" id="sheet-title">添加公众号</div>
+    <div class="sheet-field">
+      <label>公众号名称</label>
+      <input type="text" id="inp-name" placeholder="便于识别的名称">
+    </div>
+    <div class="sheet-field">
+      <label>AppID</label>
+      <input type="text" id="inp-appid" placeholder="wxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="sheet-field">
+      <label>AppSecret</label>
+      <input type="password" id="inp-secret" placeholder="32位密钥">
+      <div class="sheet-hint">仅本地存储，不明文传输</div>
+    </div>
+    <div class="sheet-field">
+      <label>后端地址</label>
+      <input type="text" id="inp-backend" placeholder="http://localhost:3000" value="http://localhost:3000">
+      <div class="sheet-hint">你的 Node.js 代理服务地址</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="closeSheet()">取消</button>
+      <button class="btn-save" id="btn-save" onclick="saveAccount()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Picker sheet -->
+<div class="overlay" id="picker-overlay" onclick="closePickerOutside(event)">
+  <div class="sheet">
+    <div class="sheet-title">选择目标公众号</div>
+    <div id="picker-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Markdown renderer ────────────────────────────────────────────
+let md;
+function initMd() {
+  // markdown-it@13 exposes window.markdownit
+  const MarkdownIt = window.markdownit || window.MarkdownIt;
+  if (typeof MarkdownIt === 'undefined') { setTimeout(initMd, 100); return; }
+  md = new MarkdownIt({ html: false, linkify: true, typographer: true,
+    highlight: function(str, lang) {
+      if (lang && window.hljs && hljs.getLanguage(lang)) {
+        try { return '<pre class="hljs"><code>' + hljs.highlight(str, { language: lang, ignoreIllegals: true }).value + '</code></pre>'; } catch(__) {}
+      }
+      return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+    }
+  });
+  console.log('markdown-it ready');
+}
+// Wait for DOM + scripts to load
+window.addEventListener('load', initMd);
+
+// ── State ────────────────────────────────────────────────────────
+let accounts = JSON.parse(localStorage.getItem('wx_accounts') || '[]');
+let selectedAcct = null;
+let publishMode = 'draft';
+let coverFile = null;
+let editingIdx = -1;
+let currentTheme = 'sanlian';
+let steps = [];
+
+const COLORS = [
+  ['#dbeafe','#1e40af'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],
+  ['#fff7ed','#9a3412'],['#f3e8ff','#6b21a8'],['#e0f2fe','#0c4a6e']
+];
+function getColor(i) { return COLORS[i % COLORS.length]; }
+
+// ── Tab ──────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', (tab==='publish'&&i===0)||(tab==='ai'&&i===1)||(tab==='config'&&i===2));
+  });
+  document.getElementById('page-publish').classList.toggle('active', tab==='publish');
+  document.getElementById('page-ai').classList.toggle('active', tab==='ai');
+  document.getElementById('page-config').classList.toggle('active', tab==='config');
+  document.getElementById('bottom-bar-publish').style.display = tab==='publish' ? '' : 'none';
+  if (tab==='config') renderConfig();
+}
+
+// ── Editor tabs ──────────────────────────────────────────────────
+function switchEditorTab(tab) {
+  const isEdit = tab === 'edit';
+  document.getElementById('tab-edit').classList.toggle('active', isEdit);
+  document.getElementById('tab-preview').classList.toggle('active', !isEdit);
+  document.getElementById('md-input').style.display = isEdit ? '' : 'none';
+  document.getElementById('preview-wrap').style.display = isEdit ? 'none' : '';
+  if (!isEdit) renderPreview();
+}
+
+// ── Step 1: Clean Markdown source before rendering ──────────────────
+// Fixes bad AI-generated list structure at the source level
+function cleanMarkdown(md) {
+  const lines = md.split('\n');
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)( +)(.*)/);
+
+    if (listMatch) {
+      const content = listMatch[4].trim();
+      // Skip list items that are completely empty (just "- " or "* ")
+      if (content === '') {
+        i++;
+        // Also skip the blank line that usually follows an empty list item
+        if (i < lines.length && lines[i].trim() === '') i++;
+        continue;
+      }
+      // Remove blank lines between list items of the same indent level
+      out.push(line);
+      i++;
+      // Look ahead: if next non-empty line is also a list item at same/deeper indent,
+      // remove the blank lines separating them to make the list "tight"
+      while (i < lines.length) {
+        if (lines[i].trim() === '') {
+          // Peek further to see if next content is a list item
+          let j = i + 1;
+          while (j < lines.length && lines[j].trim() === '') j++;
+          if (j < lines.length && lines[j].match(/^\s*([-*+]|\d+\.)/)) {
+            // Skip blank lines between list items
+            i = j;
+          } else {
+            // Real paragraph break - keep one blank line
+            out.push('');
+            i = j;
+          }
+          break;
+        } else {
+          break;
+        }
+      }
+    } else {
+      out.push(line);
+      i++;
+    }
+  }
+
+  return out.join('\n');
+}
+
+// ── Step 2: Clean rendered HTML (safety net) ─────────────────────────
+function cleanListHtml(html) {
+  return html
+    // Remove <p> wrapper inside <li> (markdown-it loose list behaviour)
+    .replace(/<li>\s*<p>/g, '<li>')
+    .replace(/<\/p>\s*<\/li>/g, '</li>')
+    // Remove completely empty <li> nodes
+    .replace(/<li[^>]*>\s*<\/li>/g, '')
+    // Fix: <li> that only wrap a sub-list with no own text
+    // (these come from "- \n  - child" patterns the AI generates)
+    .replace(/<li>(<ul|<ol)/g, (_, tag) => `<li style="list-style:none;padding-left:0;margin:0;">${tag}`)
+    // Remove empty lists
+    .replace(/<ul>\s*<\/ul>/g, '')
+    .replace(/<ol>\s*<\/ol>/g, '');
+}
+
+function renderPreview() {
+  const raw = document.getElementById('md-input').value;
+  if (!md) { document.getElementById('wx-preview').innerHTML = '<p style="color:#999;padding:20px">加载渲染器中…</p>'; return; }
+  const html = cleanListHtml(md.render(cleanMarkdown(raw || '*（暂无内容）*')));
+  const el = document.getElementById('wx-preview');
+  el.innerHTML = html;
+  el.className = 'wx-preview theme-' + currentTheme;
+}
+
+function onMdInput() {
+  const n = document.getElementById('md-input').value.length;
+  document.getElementById('char-count').textContent = n.toLocaleString() + ' 字';
+}
+
+// ── Theme ────────────────────────────────────────────────────────
+function setTheme(name, el) {
+  currentTheme = name;
+  document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('wx-preview').className = 'wx-preview theme-' + name;
+}
+
+// ── Accounts ─────────────────────────────────────────────────────
+function saveAccounts() { localStorage.setItem('wx_accounts', JSON.stringify(accounts)); }
+
+function renderSelector() {
+  const el = document.getElementById('acct-selector');
+  if (accounts.length === 0) {
+    el.innerHTML = `<div class="no-account">暂无公众号，请先在「公众号配置」中添加</div>`;
+    selectedAcct = null; return;
+  }
+  if (!selectedAcct) selectedAcct = accounts[0];
+  const a = selectedAcct;
+  const [bg, fg] = getColor(accounts.indexOf(a));
+  el.innerHTML = `<div class="account-pick" onclick="openPicker()">
+    <div class="avatar" style="background:${bg};color:${fg}">${a.name[0]}</div>
+    <div class="info"><div class="name">${escHtml(a.name)}</div><div class="id">${escHtml(a.appid)}</div></div>
+    <div style="color:var(--text-3);font-size:18px">›</div>
+  </div>`;
+}
+
+function renderConfig() {
+  const el = document.getElementById('cfg-list');
+  if (accounts.length === 0) { el.innerHTML = `<div class="no-account" style="padding:20px">还没有配置公众号</div>`; return; }
+  el.innerHTML = accounts.map((a,i) => {
+    const [bg,fg] = getColor(i);
+    return `<div class="acct-item">
+      <div class="avatar" style="background:${bg};color:${fg}">${a.name[0]}</div>
+      <div class="info"><div class="name">${escHtml(a.name)}</div><div class="appid">${escHtml(a.appid)}</div></div>
+      <span class="badge ${i===0?'badge-default':'badge-normal'}">${i===0?'默认':'备用'}</span>
+      <div class="acct-actions">
+        <button class="icon-btn" onclick="editAccount(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15.232 5.232l3.536 3.536-9.9 9.9H5.268v-3.5l9.964-9.936z" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" onclick="deleteAccount(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Sheets ────────────────────────────────────────────────────────
+function openAddSheet() {
+  editingIdx = -1;
+  document.getElementById('sheet-title').textContent = '添加公众号';
+  ['inp-name','inp-appid','inp-secret'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-backend').value = 'http://localhost:3000';
+  document.getElementById('btn-save').textContent = '保存';
+  document.getElementById('sheet-overlay').classList.add('open');
+}
+function editAccount(i) {
+  editingIdx = i; const a = accounts[i];
+  document.getElementById('sheet-title').textContent = '编辑公众号';
+  document.getElementById('inp-name').value = a.name;
+  document.getElementById('inp-appid').value = a.appid;
+  document.getElementById('inp-secret').value = a.appsecret || '';
+  document.getElementById('inp-backend').value = a.backend || 'http://localhost:3000';
+  document.getElementById('btn-save').textContent = '更新';
+  document.getElementById('sheet-overlay').classList.add('open');
+}
+function closeSheet() { document.getElementById('sheet-overlay').classList.remove('open'); }
+function closeSheetOutside(e) { if (e.target.id==='sheet-overlay') closeSheet(); }
+
+function openPicker() {
+  document.getElementById('picker-list').innerHTML = accounts.map((a,i) => {
+    const [bg,fg] = getColor(i);
+    return `<div class="picker-item" onclick="selectAccount(${i})">
+      <div class="avatar" style="background:${bg};color:${fg}">${a.name[0]}</div>
+      <div class="pinfo"><div class="pname">${escHtml(a.name)}</div><div class="paid">${escHtml(a.appid)}</div></div>
+      <svg class="check-icon ${selectedAcct===a?'visible':''}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7" stroke-linecap="round"/></svg>
+    </div>`;
+  }).join('');
+  document.getElementById('picker-overlay').classList.add('open');
+}
+function closePickerOutside(e) { if (e.target.id==='picker-overlay') document.getElementById('picker-overlay').classList.remove('open'); }
+function selectAccount(i) { selectedAcct = accounts[i]; document.getElementById('picker-overlay').classList.remove('open'); renderSelector(); }
+
+// ── Save account ─────────────────────────────────────────────────
+async function saveAccount() {
+  const name = document.getElementById('inp-name').value.trim();
+  const appid = document.getElementById('inp-appid').value.trim();
+  const appsecret = document.getElementById('inp-secret').value.trim();
+  const backend = document.getElementById('inp-backend').value.trim().replace(/\/$/, '');
+  if (!name) { showToast('请填写名称', 'error'); return; }
+  if (!appid || !appid.startsWith('wx')) { showToast('AppID 应以 wx 开头', 'error'); return; }
+  if (!appsecret) { showToast('请填写 AppSecret', 'error'); return; }
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
+  try {
+    const res = await fetch(`${backend}/api/verify`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({appid, appsecret}) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '验证失败');
+    const entry = { name, appid, appsecret, backend };
+    if (editingIdx >= 0) accounts[editingIdx] = entry; else accounts.push(entry);
+    saveAccounts();
+    if (!selectedAcct) selectedAcct = accounts[0];
+    renderSelector(); renderConfig(); closeSheet();
+    showToast(editingIdx >= 0 ? '已更新' : '添加成功 ✓', 'success');
+  } catch(e) {
+    showToast('验证失败：' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = editingIdx >= 0 ? '更新' : '保存';
+  }
+}
+
+function deleteAccount(i) {
+  if (!confirm(`确定删除「${accounts[i].name}」？`)) return;
+  if (selectedAcct === accounts[i]) selectedAcct = null;
+  accounts.splice(i, 1); saveAccounts();
+  renderSelector(); renderConfig(); showToast('已删除');
+}
+
+// ── Cover ─────────────────────────────────────────────────────────
+function handleFile(input) {
+  const f = input.files[0]; if (!f) return;
+  if (f.size > 10*1024*1024) { showToast('图片不能超过 10MB', 'error'); return; }
+  coverFile = f;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('cover-img').src = e.target.result;
+    document.getElementById('cover-drop').style.display = 'none';
+    document.getElementById('cover-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(f);
+}
+function removeCover() {
+  coverFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('cover-drop').style.display = 'flex';
+  document.getElementById('cover-preview').style.display = 'none';
+}
+
+// ── Mode ──────────────────────────────────────────────────────────
+function selectMode(m) {
+  publishMode = m;
+  document.getElementById('mode-draft').classList.toggle('selected', m==='draft');
+  document.getElementById('mode-mass').classList.toggle('selected', m==='mass');
+}
+
+// ── AI config ────────────────────────────────────────────────────
+function onAIToggle(cb) {
+  localStorage.setItem('ai_enabled', cb.checked ? '1' : '0');
+  updateAIStatusBar();
+}
+function saveAIKey(val) {
+  localStorage.setItem('deepseek_key', val);
+  updateAIStatusBar();
+}
+function updateAIStatusBar() {
+  const enabled = document.getElementById('ai-toggle').checked;
+  const bar = document.getElementById('ai-status-bar');
+  if (!bar) return;
+  bar.style.display = enabled ? 'flex' : 'none';
+  const modelEl = document.getElementById('ai-status-model');
+  const key = localStorage.getItem('deepseek_key') || '';
+  if (modelEl) modelEl.textContent = key ? 'deepseek-chat · Key 已配置' : '⚠️ 请先配置 API Key';
+}
+function togglePrompt(id) {
+  const body = document.getElementById('body-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (!body) return;
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+// Restore saved settings
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('deepseek_key');
+  if (saved) document.getElementById('deepseek-key').value = saved;
+  const enabled = localStorage.getItem('ai_enabled') === '1';
+  const toggle = document.getElementById('ai-toggle');
+  if (toggle) toggle.checked = enabled;
+  updateAIStatusBar();
+});
+
+// ── DeepSeek prompts per theme ────────────────────────────────────
+const THEME_PROMPTS = {
+  sanlian: `你是三联生活周刊的资深编辑。请将用户提供的文章内容进行排版优化，输出标准 Markdown。要求：
+1. 整体风格：克制优雅，深度阅读感，不花哨
+2. 段落：每段不超过120字，段落间保留空行，语言流畅自然
+3. 标题：用 ## 做一级分节（3-5个），用 ### 做小节，标题言简意赅有文学感
+4. 加粗：仅对最核心的观点或金句加粗（每段最多1处）
+5. 引用：将文中最精彩的金句或数据用 > 引用块突出
+6. 开头：加一段80字以内的精炼导语段落，不加标题
+7. 结尾：加一段"小结"或"写在最后"，升华主题
+8. 严禁：不加无意义标题，不过度使用加粗，不加emoji，不改变核心内容`,
+
+  sspai: `你是少数派的技术编辑。请将用户提供的内容进行排版优化，输出标准 Markdown。要求：
+1. 整体风格：精准克制，适合科技/效率/工具类内容，信息密度高
+2. 结构：用 ## 清晰分节（每节一个知识点），用 ### 做子项
+3. 列表：能列表化的内容优先用 - 无序列表或 1. 有序列表
+4. 加粗：工具名、专有名词、操作步骤关键词加粗
+5. 代码：技术词汇用 \`行内代码\` 格式
+6. 引用块：用于注意事项、Tips、重要说明
+7. 开头：一句话说清楚"这篇文章解决什么问题"
+8. 保持语言简洁直接，每段不超过80字`,
+
+  huxiu: `你是虎嗅网的商业编辑。请将用户提供的内容进行排版优化，输出标准 Markdown。要求：
+1. 整体风格：权威感，财经商业调性，数据驱动
+2. 开头：加一段强冲击力的导语，点明核心矛盾或数据
+3. 标题：用 ## 分3-5节，标题带数字或对比感（如"三个原因"、"两种路径"）
+4. 数据/数字：关键数字和结论加粗
+5. 引用块：用于专家观点、行业数据、重要结论
+6. 段落：每段聚焦一个论点，100字以内，论据充分
+7. 结尾：加"结语"，给出判断或预测
+8. 语言：有力度，避免模糊表述`,
+
+  nweekly: `你是新周刊的内容编辑。请将用户提供的内容进行排版优化，输出标准 Markdown。要求：
+1. 整体风格：轻盈现代，生活方式感，有温度
+2. 段落：短句为主，每段60-80字，留白充分，读来轻快
+3. 标题：用 ## 分节，标题富有生活感和画面感
+4. 加粗：偶尔用于有共鸣感的短句（全文不超过5处）
+5. 引用块：用于有意思的观察、引述、小故事
+6. 开头：用一个有画面感的场景或问题引入
+7. 结尾：用一句有回味的话收尾，不说大道理
+8. 严禁：不堆砌数据，不用生硬专业术语，保持亲切感`
+};
+
+// ── Call DeepSeek API ──────────────────────────────────────────────
+async function preprocessWithAI(rawText) {
+  const key = document.getElementById('deepseek-key').value.trim();
+  if (!key) { showToast('请先填写 DeepSeek API Key', 'error'); throw new Error('no key'); }
+
+  const systemPrompt = THEME_PROMPTS[currentTheme] || THEME_PROMPTS.sanlian;
+
+  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: '请对以下内容进行排版优化，直接输出 Markdown，不要有任何额外说明：\n\n' + rawText }
+      ]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'DeepSeek 请求失败 ' + res.status);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || rawText;
+}
+
+function buildWxHtml(mdText) {
+  if (!md) return mdText;
+  const raw = md.render(cleanMarkdown(mdText));
+  const T = {
+    sanlian: {
+      wrap: 'font-family:-apple-system,PingFang SC,Hiragino Sans GB,sans-serif;font-size:16px;line-height:2;color:#2c2c2c;background:#faf9f7;padding:24px 20px 32px;',
+      h1: 'font-size:22px;font-weight:700;margin:0 0 0.4em;color:#1a1a1a;letter-spacing:0.02em;line-height:1.4;',
+      h2: 'font-size:17px;font-weight:700;margin:2em 0 0.6em;color:#1a1a1a;padding-left:12px;border-left:4px solid #c8a96e;',
+      h3: 'font-size:15px;font-weight:600;margin:1.6em 0 0.5em;color:#3a3a3a;',
+      p: 'font-size:16px;line-height:2;color:#2c2c2c;margin:0 0 1.4em;',
+      strong: 'color:#1a1a1a;font-weight:700;background:linear-gradient(transparent 60%,#f5e6c8 60%);',
+      blockquote: 'border:none;margin:1.5em 0;padding:14px 20px 14px 36px;background:#f5f0e8;border-radius:4px;color:#5a5a5a;font-style:italic;line-height:1.9;',
+      a: 'color:#8b6914;text-decoration:none;border-bottom:1px solid #c8a96e;',
+      code: 'background:#f0ede8;color:#5a3a1a;padding:2px 6px;border-radius:4px;font-size:13px;font-family:monospace;',
+      pre: 'background:#2c2c2c;padding:16px;border-radius:8px;overflow-x:auto;margin:1.2em 0;',
+      hr: 'border:none;height:1px;background:linear-gradient(to right,transparent,#c8a96e,transparent);margin:2em 0;',
+      ul: 'padding-left:1.6em;margin:0.8em 0 1.2em;', li: 'margin-bottom:0.5em;line-height:1.9;',
+      th: 'background:#f0ede8;color:#2c2c2c;padding:8px 12px;border-bottom:2px solid #c8a96e;',
+      td: 'padding:8px 12px;border-bottom:1px solid #ede9e0;'
+    },
+    sspai: {
+      wrap: 'font-family:-apple-system,PingFang SC,Hiragino Sans GB,sans-serif;font-size:16px;line-height:2;color:#333;background:#ffffff;padding:24px 20px 32px;',
+      h1: 'font-size:22px;font-weight:700;margin:0 0 0.5em;color:#0d0d0d;letter-spacing:-0.3px;',
+      h2: 'font-size:17px;font-weight:700;margin:2em 0 0.7em;color:#0d0d0d;padding:10px 14px;background:#f0f7f4;border-left:3px solid #00a676;border-radius:0 6px 6px 0;',
+      h3: 'font-size:15px;font-weight:600;margin:1.5em 0 0.5em;color:#00a676;',
+      p: 'font-size:16px;line-height:2;color:#333;margin:0 0 1.4em;',
+      strong: 'color:#0d0d0d;font-weight:700;',
+      blockquote: 'border-left:3px solid #00a676;margin:1.5em 0;padding:10px 16px;background:#f6faf8;color:#555;border-radius:0 6px 6px 0;',
+      a: 'color:#00a676;text-decoration:none;',
+      code: 'background:#f0f7f4;color:#00835e;border:1px solid #d0ede6;padding:2px 6px;border-radius:4px;font-size:13px;font-family:monospace;',
+      pre: 'background:#1e2a22;padding:16px;border-radius:8px;overflow-x:auto;margin:1.2em 0;',
+      hr: 'border:none;height:2px;background:linear-gradient(to right,#00a676,#00d4a0,transparent);border-radius:1px;margin:2em 0;',
+      ul: 'padding-left:1.6em;margin:0.8em 0 1.2em;', li: 'margin-bottom:0.5em;line-height:1.9;',
+      th: 'background:#f0f7f4;color:#0d0d0d;padding:8px 12px;border:1px solid #d0ede6;',
+      td: 'padding:8px 12px;border:1px solid #e8f4f0;'
+    },
+    huxiu: {
+      wrap: 'font-family:-apple-system,PingFang SC,Hiragino Sans GB,sans-serif;font-size:16px;line-height:2;color:#d4d4d4;background:#181818;padding:24px 20px 32px;',
+      h1: 'font-size:22px;font-weight:700;margin:0 0 0.5em;color:#f0f0f0;letter-spacing:0.02em;line-height:1.4;',
+      h2: 'font-size:17px;font-weight:600;margin:2em 0 0.6em;color:#f0f0f0;padding:10px 14px;background:#242424;border-left:3px solid #5b8fff;display:block;',
+      h3: 'font-size:15px;font-weight:600;margin:1.5em 0 0.5em;color:#b0b8d0;',
+      p: 'font-size:16px;line-height:2;color:#d4d4d4;margin:0 0 1.4em;',
+      strong: 'color:#ffffff;font-weight:700;',
+      blockquote: 'border-left:2px solid #5b8fff;margin:1.5em 0;padding:10px 16px;background:#1e2030;color:#a0a8c0;border-radius:0 6px 6px 0;',
+      a: 'color:#5b8fff;text-decoration:none;',
+      code: 'background:#242424;color:#7dd3fc;border:1px solid #333;padding:2px 6px;border-radius:4px;font-size:13px;font-family:monospace;',
+      pre: 'background:#0d0d0d;padding:16px;border-radius:8px;overflow-x:auto;margin:1.2em 0;border:1px solid #333;',
+      hr: 'border:none;height:1px;background:#333;margin:2em 0;',
+      ul: 'padding-left:1.6em;margin:0.8em 0 1.2em;', li: 'margin-bottom:0.5em;line-height:1.9;color:#d4d4d4;',
+      th: 'background:#242424;color:#f0f0f0;padding:8px 12px;border:1px solid #333;',
+      td: 'padding:8px 12px;border:1px solid #2a2a2a;color:#c0c0c0;'
+    },
+    nweekly: {
+      wrap: 'font-family:-apple-system,PingFang SC,Hiragino Sans GB,sans-serif;font-size:16px;line-height:2;color:#3a3a3a;background:#ffffff;padding:24px 20px 32px;',
+      h1: 'font-size:23px;font-weight:700;margin:0 0 0.5em;color:#111;letter-spacing:0.05em;line-height:1.4;',
+      h2: 'font-size:16px;font-weight:600;margin:2em 0 0.8em;color:#111;text-align:center;padding:8px 0;letter-spacing:0.08em;display:block;',
+      h3: 'font-size:15px;font-weight:600;margin:1.5em 0 0.5em;color:#111;padding-left:10px;border-left:3px solid #999;letter-spacing:0.03em;',
+      p: 'font-size:16px;line-height:2;color:#3a3a3a;margin:0 0 1.4em;',
+      strong: 'color:#111;font-weight:700;letter-spacing:0.02em;',
+      blockquote: 'border:none;margin:1.8em 2em;padding:0;color:#666;font-style:italic;font-size:15px;line-height:2;text-align:center;',
+      a: 'color:#333;text-decoration:underline;text-underline-offset:3px;',
+      code: 'background:#f5f5f5;color:#333;padding:2px 6px;border-radius:3px;font-size:13px;font-family:monospace;',
+      pre: 'background:#f5f5f5;padding:16px;border-radius:8px;overflow-x:auto;margin:1.2em 0;',
+      hr: 'border:none;height:1px;background:#111;width:60px;margin:2em auto;display:block;',
+      ul: 'padding-left:1.6em;margin:0.8em 0 1.2em;', li: 'margin-bottom:0.5em;line-height:1.9;',
+      th: 'background:#111;color:#fff;padding:8px 12px;',
+      td: 'padding:8px 12px;border-bottom:1px solid #eee;'
+    }
+  };
+  const s = T[currentTheme] || T.sanlian;
+  const cleaned = cleanListHtml(raw);
+  return `<div style="${s.wrap}">` + cleaned
+    .replace(/<h1>/g, `<h1 style="${s.h1}">`)
+    .replace(/<h2>/g, `<h2 style="${s.h2}">`)
+    .replace(/<h3>/g, `<h3 style="${s.h3}">`)
+    .replace(/<p>/g, `<p style="${s.p}">`)
+    .replace(/<strong>/g, `<strong style="${s.strong}">`)
+    .replace(/<blockquote>/g, `<blockquote style="${s.blockquote}">`)
+    .replace(/<a /g, `<a style="${s.a}" `)
+    .replace(/<ul>/g, `<ul style="${s.ul}">`)
+    .replace(/<ol>/g, '<ol style="padding-left:1.6em;margin:0.8em 0 1.2em;">')
+    .replace(/<li>/g, `<li style="${s.li}">`)
+    .replace(/<code>/g, `<code style="${s.code}">`)
+    .replace(/<pre>/g, `<pre style="${s.pre}">`)
+    .replace(/<hr>/g, `<hr style="${s.hr}">`)
+    .replace(/<table>/g, '<table style="width:100%;border-collapse:collapse;margin:1.2em 0;font-size:14px;">')
+    .replace(/<th>/g, `<th style="${s.th}">`)
+    .replace(/<td>/g, `<td style="${s.td}">`)
+    .replace(/<img /g, '<img style="max-width:100%;display:block;margin:16px auto;border-radius:6px;" ')
+    + '</div>';
+}
+
+// ── Progress ──────────────────────────────────────────────────────
+function initSteps(labels) {
+  steps = labels.map(label => ({ label, status: 'wait', msg: '' }));
+  renderSteps();
+  document.getElementById('progress-wrap').classList.add('visible');
+}
+function setStep(i, status, msg='') { steps[i] = {...steps[i], status, msg}; renderSteps(); }
+function renderSteps() {
+  const icons = {wait:'○', running:'…', done:'✓', err:'✗'};
+  document.getElementById('step-list').innerHTML = steps.map(s => `
+    <div class="step-item">
+      <div class="step-dot ${s.status}">${icons[s.status]}</div>
+      <div class="step-info">
+        <div class="step-name">${s.label}</div>
+        ${s.msg ? `<div class="step-msg ${s.status==='err'?'err':''}">${escHtml(s.msg)}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+// ── Publish ───────────────────────────────────────────────────────
+async function doPublish() {
+  if (!selectedAcct) { showToast('请先配置并选择公众号', 'error'); switchTab('config'); return; }
+  const title = document.getElementById('art-title').value.trim();
+  const mdText = document.getElementById('md-input').value.trim();
+  const author = document.getElementById('art-author').value.trim();
+  const digest = document.getElementById('art-digest').value.trim();
+  if (!title) { showToast('请填写文章标题', 'error'); return; }
+  if (!mdText) { showToast('请填写正文内容', 'error'); return; }
+
+  const btn = document.getElementById('btn-pub');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> 发布中…';
+
+  const aiEnabled = document.getElementById('ai-toggle').checked && !!localStorage.getItem('deepseek_key');
+  const step0Label = aiEnabled ? 'AI 智能排版 + 转换' : '排版转换 HTML';
+  const stepLabels = publishMode === 'draft'
+    ? [step0Label, '上传封面图片', '保存到草稿箱']
+    : [step0Label, '上传封面图片', '创建图文草稿', '群发推送'];
+  initSteps(stepLabels);
+
+  const { appid, appsecret, backend } = selectedAcct;
+
+  try {
+    // Step 0: AI preprocess (optional) + render HTML
+    setStep(0, 'running', 'AI 排版处理中…');
+    let processedMd = mdText;
+    const aiEnabled = document.getElementById('ai-toggle').checked && !!localStorage.getItem('deepseek_key');
+    if (aiEnabled) {
+      try {
+        processedMd = await preprocessWithAI(mdText);
+        // Update editor with processed content
+        document.getElementById('md-input').value = processedMd;
+        onMdInput();
+      } catch(e) {
+        if (e.message === 'no key') throw { step:0, msg:'请填写 DeepSeek API Key' };
+        throw { step:0, msg: 'AI 处理失败：' + e.message };
+      }
+    }
+    const styledHtml = buildWxHtml(processedMd);
+    setStep(0, 'done', `${aiEnabled?'AI排版 ✦ ':''}主题：${currentTheme}，${styledHtml.length} 字符`);
+
+    // Step 1: Upload cover
+    let thumb_media_id = '';
+    setStep(1, 'running', '上传中…');
+    if (coverFile) {
+      const form = new FormData();
+      form.append('appid', appid); form.append('appsecret', appsecret); form.append('image', coverFile);
+      const res = await fetch(`${backend}/api/upload-image`, { method:'POST', body: form });
+      const data = await res.json();
+      if (!data.ok) throw { step:1, msg: data.error||'上传失败' };
+      thumb_media_id = data.media_id;
+      setStep(1, 'done', `media_id: ${thumb_media_id.slice(0,16)}…`);
+    } else {
+      setStep(1, 'done', '未上传封面，跳过');
+    }
+
+    // Step 2: 创建草稿
+    setStep(2, 'running', '创建草稿…');
+    const draftRes = await fetch(`${backend}/api/draft`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ appid, appsecret, title, content: styledHtml, author, digest, thumb_media_id })
+    });
+    const draftData = await draftRes.json();
+    if (!draftData.ok) throw { step:2, msg: draftData.error||'草稿失败' };
+
+    // 「保存草稿」到这里结束，不再往下走
+    if (publishMode === 'draft') {
+      setStep(2, 'done', `已保存 ✓ 草稿 ID: ${draftData.media_id.slice(0,16)}…`);
+      showToast('已保存到草稿箱 ✓', 'success');
+    } else {
+      // 「立即群发」继续第 3 步
+      setStep(2, 'done', `草稿 ID: ${draftData.media_id.slice(0,16)}…`);
+      setStep(3, 'running', '群发中…');
+      const pubRes = await fetch(`${backend}/api/masssend`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ appid, appsecret, media_id: draftData.media_id })
+      });
+      const pubData = await pubRes.json();
+      if (!pubData.ok) throw { step:3, msg: pubData.error||'群发失败' };
+      setStep(3, 'done', '群发成功 🎉');
+      showToast('群发成功！', 'success');
+    }
+
+  } catch(e) {
+    if (e && e.step !== undefined) {
+      setStep(e.step, 'err', e.msg);
+      for (let i = e.step+1; i < steps.length; i++) setStep(i, 'wait', '已跳过');
+      showToast('失败：' + e.msg, 'error');
+    } else {
+      showToast('网络错误：' + (e.message||e), 'error');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/></svg> 重新发布';
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── IP Whitelist helper ───────────────────────────────────────────
+let currentIp = '';
+async function fetchIp() {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    currentIp = data.ip;
+    document.getElementById('ip-display').textContent = currentIp;
+  } catch(e) {
+    try {
+      const res2 = await fetch('https://api64.ipify.org?format=json');
+      const data2 = await res2.json();
+      currentIp = data2.ip;
+      document.getElementById('ip-display').textContent = currentIp;
+    } catch(e2) {
+      document.getElementById('ip-display').innerHTML = '<span style="color:#c00;font-size:12px;">获取失败，请手动运行 curl ifconfig.me</span>';
+    }
+  }
+}
+
+function copyIp() {
+  if (!currentIp) { showToast('IP 还未获取到', 'error'); return; }
+  navigator.clipboard.writeText(currentIp).then(() => {
+    showToast('IP 已复制：' + currentIp, 'success');
+  }).catch(() => {
+    // fallback
+    const el = document.createElement('textarea');
+    el.value = currentIp;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('IP 已复制：' + currentIp, 'success');
+  });
+}
+
+
+renderSelector();
+renderConfig();
+fetchIp();
+</script>
+</body>
+</html>
