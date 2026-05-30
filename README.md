@@ -57,16 +57,6 @@ node server.js
 - `access_token` 缓存在内存中，有效期内复用（2小时）
 - 生产环境建议对后端接口增加鉴权（如 API Key 校验）
 
-## 微信接口对应关系
-
-| 步骤 | 接口 |
-|------|------|
-| 获取 token | `GET /cgi-bin/token` |
-| 上传封面（临时素材） | `POST /cgi-bin/media/upload?type=image` |
-| 上传正文内嵌图片 | `POST /cgi-bin/media/uploadimg` |
-| 创建草稿 | `POST /cgi-bin/draft/add` |
-| 提交发布 | `POST /cgi-bin/freepublish/submit` |
-| 群发 | `POST /cgi-bin/message/mass/sendall` |
 
 ## 常见问题
 
