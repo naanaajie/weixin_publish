@@ -2,6 +2,12 @@
 
 手机端网页 + Node.js 代理，一键发布文章到微信公众号。
 
+## 🚀 在线访问
+
+**立即体验**：https://weixinpublish-production.up.railway.app/
+
+> 首次使用需在「公众号配置」中填写后端地址为：`https://weixinpublish-production.up.railway.app`
+
 ## 文件结构
 
 ```
