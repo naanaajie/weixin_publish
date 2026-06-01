@@ -36,7 +36,7 @@ async function getAccessToken(appid, appsecret) {
   if (cached && cached.expiresAt > Date.now() + 60000) {
     return cached.token;
   }
-  const res = await axios.get('https://api.weixin.qq.com/cgi-bin/token', {
+  const res = await axios.get('http://api.weixin.qq.com/cgi-bin/token', {
     params: { grant_type: 'client_credential', appid, secret: appsecret }
   });
   if (res.data.errcode) {
@@ -75,7 +75,7 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
       contentType: req.file.mimetype
     });
     const permRes = await axios.post(
-      `https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=${token}&type=image`,
+      `http://api.weixin.qq.com/cgi-bin/material/add_material?access_token=${token}&type=image`,
       form1, { headers: form1.getHeaders() }
     );
     if (permRes.data.errcode) throw new Error(`上传永久素材失败: ${permRes.data.errmsg} (${permRes.data.errcode})`);
@@ -88,7 +88,7 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
       contentType: req.file.mimetype
     });
     const urlRes = await axios.post(
-      `https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token=${token}`,
+      `http://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token=${token}`,
       form2, { headers: form2.getHeaders() }
     );
     const url = urlRes.data.url || '';
@@ -118,7 +118,7 @@ app.post('/api/draft', async (req, res) => {
     const body = { articles: [article] };
     console.log('草稿请求体:', JSON.stringify({ title: article.title, has_thumb: !!article.thumb_media_id, content_len: content.length }));
     const draftRes = await axios.post(
-      `https://api.weixin.qq.com/cgi-bin/draft/add?access_token=${token}`,
+      `http://api.weixin.qq.com/cgi-bin/draft/add?access_token=${token}`,
       body
     );
     console.log('微信草稿响应:', JSON.stringify(draftRes.data));
@@ -140,7 +140,7 @@ app.post('/api/publish', async (req, res) => {
   try {
     const token = await getAccessToken(appid, appsecret);
     const pubRes = await axios.post(
-      `https://api.weixin.qq.com/cgi-bin/freepublish/submit?access_token=${token}`,
+      `http://api.weixin.qq.com/cgi-bin/freepublish/submit?access_token=${token}`,
       { media_id }
     );
     if (pubRes.data.errcode && pubRes.data.errcode !== 0) {
@@ -159,7 +159,7 @@ app.post('/api/masssend', async (req, res) => {
   try {
     const token = await getAccessToken(appid, appsecret);
     const sendRes = await axios.post(
-      `https://api.weixin.qq.com/cgi-bin/message/mass/sendall?access_token=${token}`,
+      `http://api.weixin.qq.com/cgi-bin/message/mass/sendall?access_token=${token}`,
       {
         filter: { is_to_all: true },
         mpnews: { media_id },
