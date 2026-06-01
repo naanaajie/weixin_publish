@@ -1188,19 +1188,13 @@ function showToast(msg, type='') {
 let currentIp = '';
 async function fetchIp() {
   try {
-    const res = await fetch('https://api.ipify.org?format=json');
+    // 从我们自己后端获取服务器的公网 IP（这才是需要加进微信白名单的 IP）
+    const res = await fetch('/api/server-ip');
     const data = await res.json();
     currentIp = data.ip;
     document.getElementById('ip-display').textContent = currentIp;
   } catch(e) {
-    try {
-      const res2 = await fetch('https://api64.ipify.org?format=json');
-      const data2 = await res2.json();
-      currentIp = data2.ip;
-      document.getElementById('ip-display').textContent = currentIp;
-    } catch(e2) {
-      document.getElementById('ip-display').innerHTML = '<span style="color:#c00;font-size:12px;">获取失败，请手动运行 curl ifconfig.me</span>';
-    }
+    document.getElementById('ip-display').innerHTML = '<span style="color:#c00;font-size:12px;">获取失败，请联系管理员</span>';
   }
 }
 

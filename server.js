@@ -14,6 +14,10 @@ const path = require('path');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// 服务器公网 IP（用于显示给前端，提醒用户加入微信白名单）
+// 这是腾讯云轻量服务器的固定 IP，换服务器时改这里。
+const SERVER_PUBLIC_IP = '82.156.226.105';
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
@@ -48,6 +52,11 @@ async function getAccessToken(appid, appsecret) {
   };
   return res.data.access_token;
 }
+
+// ─── 0. 返回服务器公网 IP（前端用，提醒用户加白名单） ────────────
+app.get('/api/server-ip', (req, res) => {
+  res.json({ ip: SERVER_PUBLIC_IP });
+});
 
 // ─── 1. 验证公众号凭据 ─────────────────────────────────────────────
 app.post('/api/verify', async (req, res) => {
