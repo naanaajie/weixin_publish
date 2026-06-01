@@ -128,7 +128,8 @@ app.post('/api/draft', async (req, res) => {
     console.log('草稿请求体:', JSON.stringify({ title: article.title, has_thumb: !!article.thumb_media_id, content_len: content.length }));
     const draftRes = await axios.post(
       `http://api.weixin.qq.com/cgi-bin/draft/add?access_token=${token}`,
-      body
+      body,
+      { headers: { 'Content-Type': 'application/json' } }
     );
     console.log('微信草稿响应:', JSON.stringify(draftRes.data));
     if (draftRes.data.errcode && draftRes.data.errcode !== 0) {
@@ -150,7 +151,8 @@ app.post('/api/publish', async (req, res) => {
     const token = await getAccessToken(appid, appsecret);
     const pubRes = await axios.post(
       `http://api.weixin.qq.com/cgi-bin/freepublish/submit?access_token=${token}`,
-      { media_id }
+      { media_id },
+      { headers: { 'Content-Type': 'application/json' } }
     );
     if (pubRes.data.errcode && pubRes.data.errcode !== 0) {
       throw new Error(`发布失败: ${pubRes.data.errmsg} (${pubRes.data.errcode})`);
@@ -174,7 +176,8 @@ app.post('/api/masssend', async (req, res) => {
         mpnews: { media_id },
         msgtype: 'mpnews',
         send_ignore_reprint: 1
-      }
+      },
+      { headers: { 'Content-Type': 'application/json' } }
     );
     if (sendRes.data.errcode && sendRes.data.errcode !== 0) {
       throw new Error(`群发失败: ${sendRes.data.errmsg} (${sendRes.data.errcode})`);
