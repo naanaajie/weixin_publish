@@ -782,12 +782,17 @@ function renderConfig() {
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── Auto-detect backend URL ──────────────────────────────────────
+function getDefaultBackendUrl() {
+  return window.location.protocol + '//' + window.location.host;
+}
+
 // ── Sheets ────────────────────────────────────────────────────────
 function openAddSheet() {
   editingIdx = -1;
   document.getElementById('sheet-title').textContent = '添加公众号';
   ['inp-name','inp-appid','inp-secret'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('inp-backend').value = 'http://localhost:3000';
+  document.getElementById('inp-backend').value = getDefaultBackendUrl();
   document.getElementById('btn-save').textContent = '保存';
   document.getElementById('sheet-overlay').classList.add('open');
 }
@@ -797,7 +802,7 @@ function editAccount(i) {
   document.getElementById('inp-name').value = a.name;
   document.getElementById('inp-appid').value = a.appid;
   document.getElementById('inp-secret').value = a.appsecret || '';
-  document.getElementById('inp-backend').value = a.backend || 'http://localhost:3000';
+  document.getElementById('inp-backend').value = a.backend || getDefaultBackendUrl();
   document.getElementById('btn-save').textContent = '更新';
   document.getElementById('sheet-overlay').classList.add('open');
 }
